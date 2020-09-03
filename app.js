@@ -1,11 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const accountRoutes = require('./routes/accounts');
-const MONGODB_URI = '';
+const MONGODB_URI = `mongodb+srv://GLCorey:${process.env.MONGO_DB_PW}@cluster0-hdloo.mongodb.net/services?retryWrites=true&w=majority`;
 const mongoose = require('mongoose');
-//Accounts route
-//  GET, POST, PUT, DELETE
 
 app.use(bodyParser.json());
 app.use((req, res, next) => {
@@ -22,6 +21,7 @@ mongoose.connect(MONGODB_URI, {
     useUnifiedTopology: true
 })
 .then(() => {
+    console.log('MongoDB Connected!!')
     app.listen(8080);
 })
 .catch(err => console.log('error connecting with mongoose: ', err));
