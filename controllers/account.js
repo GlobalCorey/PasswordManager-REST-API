@@ -49,6 +49,36 @@ exports.addAccount = async (req, res, next) => {
     }
 }
 
+exports.changeAccount = async (req, res, next) => {
+    console.log('Change password info and stuff.')
+    const name = req.body.account.name;
+    const newPassword = req.body.account.password;
+
+    try {
+        const doesAccountExist = await Account.findOne({name: name});
+        if(!doesAccountExist){
+            const error = new Error('Account info does not exists.')
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const updatedAccount = await Account.findOneAndUpdate({name: name}, {password: newPassword}, {new: true});
+        if(!updatedAccount){
+            throw new Error('Error updating Account');
+        }
+
+        res.status(201).json({
+            acount: updatedAccount,
+            message: 'Success in updating account!'
+        })
+
+        return updatedAccount;
+
+    }catch(err){
+        console.log('Error updating account: ', err);
+    }
+}
+
 exports.deleteAccount = async (req, res, next) => {
     const accountID = req.query.id
     console.log('deleteAccount hit: ', accountID);

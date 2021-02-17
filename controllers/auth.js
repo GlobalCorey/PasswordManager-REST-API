@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 
 exports.signup = async (req, res, next) => {
     try {
+        console.log('Hit signup!!!!!!!')
         //This validation check needs to be inside the try catch even though it has 
         // no await code.
         //This is because the catch block at the bottom will not know what the error 
@@ -57,6 +58,7 @@ exports.login = async (req, res, next) => {
     try {
         const email = req.body.email;
         const password = req.body.password;
+        console.log('email: ', email, '\npassword: ', password);
 
         const user = await User.findOne({email: email});
         if(!user){
