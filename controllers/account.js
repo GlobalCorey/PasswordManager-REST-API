@@ -38,7 +38,7 @@ exports.addAccount = async (req, res, next) => {
         }
 
         res.status(201).json({
-            acount: newAccount,
+            account: newAccount,
             message: 'Success in adding account!'
         })
 

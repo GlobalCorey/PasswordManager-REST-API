@@ -8,10 +8,10 @@ const authMiddleware = require('../middleware/verifyAuth');
 router.get('/accounts', authMiddleware, accountController.getAccounts);
 
 //POST new account to account data
-router.post('/accounts', accountController.addAccount);
+router.post('/accounts', authMiddleware, accountController.addAccount);
 
 //DELETE an account with a given id
-router.delete('/accounts', accountController.deleteAccount);
+router.delete('/accounts', authMiddleware, accountController.deleteAccount);
 
 //PUT change password
 router.put('/accounts', accountController.changeAccount);
