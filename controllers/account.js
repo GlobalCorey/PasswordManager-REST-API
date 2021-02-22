@@ -2,7 +2,9 @@ const Account = require('../models/account');
 
 exports.getAccounts = async (req, res, next) => {
     console.log('getAccounts Hit')
-    const accounts = await Account.find();
+    const currentUserID = req.query.userID
+    //Find accounts where currentUserID matches query
+    const accounts = await Account.find({userID: currentUserID});
     if(!accounts){
         const error = new Error('Accounts not found!');
         error.statusCode = 404;
@@ -15,11 +17,13 @@ exports.getAccounts = async (req, res, next) => {
 }
 
 exports.addAccount = async (req, res, next) => {
-    console.log('addAccount hit')
+    console.log('addAccount hit: ', req.body.account);
+    const userID = req.body.account.userID;
     const name = req.body.account.name;
     const password = req.body.account.password;
     
     const newAccount = new Account({
+        userID: userID,
         name: name,
         password: password
     })
@@ -83,7 +87,6 @@ exports.deleteAccount = async (req, res, next) => {
     const accountID = req.query.id
     console.log('deleteAccount hit: ', accountID);
     const accountToDelete = await Account.findByIdAndDelete(accountID);
-    console.log('accountToDelet: ', accountToDelete);
     if(!accountToDelete){
         const error = new Error('Account id: ', req.body.id, ' not found!');
         error.statusCode = 404;

@@ -7,18 +7,6 @@ const jwt = require('jsonwebtoken');
 exports.signup = async (req, res, next) => {
     try {
         console.log('Hit signup!!!!!!!')
-        //This validation check needs to be inside the try catch even though it has 
-        // no await code.
-        //This is because the catch block at the bottom will not know what the error 
-        // that is thrown within the if block will be if it happens OUTSIDE the try-catch
-
-        // const errors = validationResult(req);
-        // if(!errors.isEmpty()){
-        //     const error = new Error('Validation failed. Data entered is invalid.')
-        //     error.statusCode = 422;
-        //     error.data = errors.array();
-        //     throw error;
-        // }
 
         const email = req.body.email;
         const password = req.body.password;
@@ -82,7 +70,7 @@ exports.login = async (req, res, next) => {
         {expiresIn: '1h'})
         res.status(200).json({
             token: token,
-            userId: user._id.toString()
+            userID: user._id.toString()
         })
         return;
         
