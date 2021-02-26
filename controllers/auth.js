@@ -2,12 +2,33 @@ const { validationResult } = require('express-validator');
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const BCRYPT_SALT = 12;
-const jwt = require('jsonwebtoken');
+const jwt = require('../jwt/jwt')
+
+//Need to add new endpoint to get the current user if the 
+// session is still valid
+
+exports.currentUser = async(req, res, next) => {
+    const currentUser = req.userData;
+
+    const user = await User.findById(currentUser.userId);
+    if(!user){
+        const error = new Error('User does not exists.')
+        error.statusCode = 401;
+        throw error;
+    }
+
+    //Add getRefreshToken functionality to the JWT file
+    const token = jwt.getAccessToken(user.email, user._id.toString());
+
+    res.status(200).json({
+        token: token,
+        userID: user._id.toString()
+    })
+    return;
+}
 
 exports.signup = async (req, res, next) => {
     try {
-        console.log('Hit signup!!!!!!!')
-
         const email = req.body.email;
         const password = req.body.password;
 
@@ -44,6 +65,7 @@ exports.signup = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
     try {
+        
         const email = req.body.email;
         const password = req.body.password;
         console.log('email: ', email, '\npassword: ', password);
@@ -62,12 +84,9 @@ exports.login = async (req, res, next) => {
             throw error;
         }
 
-        const token = jwt.sign({
-            email: user.email,
-            userId: user._id.toString()
-        }, 
-        `${process.env.JWT_SECRET_TOKEN}`, 
-        {expiresIn: '1h'})
+        //Add getRefreshToken functionality to the JWT file
+        const token = jwt.getAccessToken(user.email, user._id.toString());
+
         res.status(200).json({
             token: token,
             userID: user._id.toString()
