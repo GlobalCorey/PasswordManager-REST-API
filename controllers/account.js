@@ -1,9 +1,8 @@
 const Account = require('../models/account');
 
 exports.getAccounts = async (req, res, next) => {
-    //Utilize JWT req.userData here
-    console.log('getAccounts Hit')
-    const currentUserID = req.query.userID
+    console.log('getAccounts Hit: ', req.userData);
+    const currentUserID = req.userData.userId;
     const accounts = await Account.find({userID: currentUserID});
     if(!accounts){
         const error = new Error('Accounts not found!');
@@ -17,9 +16,8 @@ exports.getAccounts = async (req, res, next) => {
 }
 
 exports.addAccount = async (req, res, next) => {
-    //Utilize JWT req.userData here
     console.log('addAccount hit: ', req.body.account);
-    const userID = req.body.account.userID;
+    const userID = req.userData.userId
     const name = req.body.account.name;
     const password = req.body.account.password;
     

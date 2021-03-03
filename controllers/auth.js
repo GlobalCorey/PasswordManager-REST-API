@@ -17,14 +17,29 @@ exports.currentUser = async(req, res, next) => {
         throw error;
     }
 
-    //Add getRefreshToken functionality to the JWT file
-    const token = jwt.getAccessToken(user.email, user._id.toString());
-
     res.status(200).json({
-        token: token,
         userID: user._id.toString()
     })
     return;
+}
+
+exports.refreshToken = async(req, res) => {
+    const refreshToken = req.body.refreshToken;
+    if(!refreshToken){
+        return res.status(403).send('Access is forbidden');
+    }
+    try{
+        const newTokens = await jwt.refreshTokens(refreshToken);
+        res.status(200).json({
+            userID: newTokens.userId,
+            accessToken: newTokens.accessToken,
+            refreshToken: newTokens.refreshToken
+        })
+        return;
+    }catch(err){
+        const message = (err && err.message) || err;
+        res.status(403).send(message);
+    }
 }
 
 exports.signup = async (req, res, next) => {
@@ -42,7 +57,8 @@ exports.signup = async (req, res, next) => {
         const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT);
         const newUser = new User({
             email: email,
-            password: hashedPassword
+            password: hashedPassword,
+            refreshTokens:[]
         })
 
         const userSaveResult = await newUser.save();
@@ -85,11 +101,13 @@ exports.login = async (req, res, next) => {
         }
 
         //Add getRefreshToken functionality to the JWT file
-        const token = jwt.getAccessToken(user.email, user._id.toString());
+        const accessToken = jwt.getAccessToken(user.email, user._id.toString());
+        const refreshToken = await jwt.getRefreshToken(user.email, user._id.toString());
 
         res.status(200).json({
-            token: token,
-            userID: user._id.toString()
+            userID: user._id.toString(),
+            accessToken: accessToken,
+            refreshToken: refreshToken
         })
         return;
         
