@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 // const uuidv1 = require('uuidv1');
 
-module.exports.verifyJWTToken = (token) => {
+const verifyJWTToken = (token) => {
     console.log('verifyJWTToken');
     return new Promise((resolve, reject) => {
         jwt.verify(token, process.env.JWT_SECRET_TOKEN, (err, decodedToken) => {
@@ -10,10 +10,10 @@ module.exports.verifyJWTToken = (token) => {
             if(err){
                 return reject(err.message);
             }
-            console.log('decodedToken: ', decodedToken);
+            // console.log('decodedToken: ', decodedToken);
             
             if(!decodedToken || !decodedToken.userId){
-                console.log('decodedToken: ', decodedToken);
+                // console.log('decodedToken: ', decodedToken);
                 return reject('Token is invalid. Decode error.')
             }
             resolve(decodedToken);
@@ -21,7 +21,7 @@ module.exports.verifyJWTToken = (token) => {
     })
 };
 
-module.exports.getAccessToken = (email, userID) => {
+const getAccessToken = (email, userID) => {
     return jwt.sign({
         email: email,
         userId: userID
@@ -30,7 +30,7 @@ module.exports.getAccessToken = (email, userID) => {
     {expiresIn: '1m'})
 };
 
-module.exports.getRefreshToken = async (email, userID) => {
+const getRefreshToken = async (email, userID) => {
     //Access DB to check if there is a refresh token
     const user = await User.findOne({_id: userID})
     if(!user){
@@ -65,29 +65,13 @@ module.exports.getRefreshToken = async (email, userID) => {
         error.statusCode = 401;
         throw error;
     }
-    console.log('updateRefreshTokens: ', updateRefreshTokens);
     
     return refreshToken;
 };
 
-// getUpdatedRefreshToken = async (oldRefreshToken, payload) => {
-//     const newRefreshToken = jwt.sign({
-//             email: payload.email,
-//             userId: payload.userId
-//         }, 
-//         process.env.JWT_SECRET_TOKEN, 
-//         {expiresIn: '5d'});
-
-//         const user = await User.findOne({_id: decodedToken.userId})
-//         if(!user){
-//             throw new Error('User does not exist.');
-//         }
-//         user.refreshTokens
-// }
-
-module.exports.refreshTokens = async (token) => {
+const refreshTokens = async (token) => {
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET_TOKEN);
-
+    
     //Check for user
     const user = await User.findOne({_id: decodedToken.userId})
     if(!user){
@@ -106,15 +90,22 @@ module.exports.refreshTokens = async (token) => {
 
     const payload = {
         email: user.email,
-        userId: user._id
+        userId: user._id.toString()
     }
 
     const newAccessToken = getAccessToken(payload.email, payload.userId);
-    const newRefreshToken = getRefreshToken(payload.email, payload.userId);
+    const newRefreshToken = await getRefreshToken(payload.email, payload.userId);
 
     return {
         userId: user._id.toString(),
         accessToken: newAccessToken,
         refreshToken: newRefreshToken
     }
+}
+
+module.exports = {
+    verifyJWTToken: verifyJWTToken,
+    getAccessToken: getAccessToken,
+    getRefreshToken: getRefreshToken,
+    refreshTokens: refreshTokens
 }

@@ -17,25 +17,25 @@ exports.currentUser = async(req, res, next) => {
         throw error;
     }
 
-    res.status(200).json({
+    return res.status(200).json({
         userID: user._id.toString()
     })
-    return;
 }
 
-exports.refreshToken = async(req, res) => {
+exports.refreshToken = async (req, res) => {
     const refreshToken = req.body.refreshToken;
+    console.log('refreshToken REST API: ', refreshToken);
     if(!refreshToken){
         return res.status(403).send('Access is forbidden');
     }
     try{
         const newTokens = await jwt.refreshTokens(refreshToken);
-        res.status(200).json({
+        console.log('newTokens: ', newTokens);
+        return res.status(200).json({
             userID: newTokens.userId,
             accessToken: newTokens.accessToken,
             refreshToken: newTokens.refreshToken
         })
-        return;
     }catch(err){
         const message = (err && err.message) || err;
         res.status(403).send(message);
