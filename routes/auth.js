@@ -9,6 +9,6 @@ router.post('/login', authController.login);
 
 router.get('/current-user', jwtMiddleware, authController.currentUser);
 
-router.post('/refresh-token', authController.refreshToken);
+router.post('/refresh-token', authController.checkForValidRefreshToken_ThenReturnNewRefreshToken);
 
 module.exports = router;

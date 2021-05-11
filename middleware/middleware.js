@@ -3,7 +3,6 @@ const myJwt = require('../jwt/jwt');
 
 module.exports.jwtMiddleware =  (req, res, next) => {
     const token = req.headers.authorization.replace("Bearer ", "");
-    // console.log("jwtMiddleware ",token);
     myJwt.verifyJWTToken(token)
     .then(data => {
         const userData = {

@@ -1,7 +1,6 @@
 const Account = require('../models/account');
 
 exports.getAccounts = async (req, res, next) => {
-    console.log('getAccounts Hit: ', req.userData);
     const currentUserID = req.userData.userId;
     const accounts = await Account.find({userID: currentUserID});
     if(!accounts){
@@ -16,7 +15,6 @@ exports.getAccounts = async (req, res, next) => {
 }
 
 exports.addAccount = async (req, res, next) => {
-    console.log('addAccount hit: ', req.body.account);
     const userID = req.userData.userId
     const name = req.body.account.name;
     const password = req.body.account.password;
@@ -28,13 +26,8 @@ exports.addAccount = async (req, res, next) => {
     })
 
     try {
-        const doesAccountExist = await Account.findOne({name: name});
-        if(doesAccountExist){
-            const error = new Error('Account info already exists.')
-            error.statusCode = 422;
-            throw error;
-        }
-
+        await checkIfAccountInfoAlreadyExistsByName(name, res);
+       
         const accountSaveResult = await newAccount.save();
         if(!accountSaveResult){
             throw new Error('Error saving new Account');
@@ -53,25 +46,14 @@ exports.addAccount = async (req, res, next) => {
 }
 
 exports.changeAccount = async (req, res, next) => {
-    console.log('Change password info and stuff.')
     const name = req.body.account.name;
     const newPassword = req.body.account.password;
 
     try {
-        const doesAccountExist = await Account.findOne({name: name});
-        if(!doesAccountExist){
-            const error = new Error('Account info does not exists.')
-            error.statusCode = 404;
-            throw error;
-        }
-
-        const updatedAccount = await Account.findOneAndUpdate({name: name}, {password: newPassword}, {new: true});
-        if(!updatedAccount){
-            throw new Error('Error updating Account');
-        }
+        const updatedAccount = await findAccountByNameAndUpdatePassword(name, newPassword);
 
         res.status(201).json({
-            acount: updatedAccount,
+            account: updatedAccount,
             message: 'Success in updating account!'
         })
 
@@ -84,15 +66,38 @@ exports.changeAccount = async (req, res, next) => {
 
 exports.deleteAccount = async (req, res, next) => {
     const accountID = req.query.id
-    console.log('deleteAccount hit: ', accountID);
-    const accountToDelete = await Account.findByIdAndDelete(accountID);
-    if(!accountToDelete){
-        const error = new Error('Account id: ', req.body.id, ' not found!');
-        error.statusCode = 404;
-        throw error;
-    }
+    const accountToDelete = await findAccountByIdAndDelete_ThenReturnDeletedAccountName(accountID);
 
     res.status(200).json({
         message: `Account:  ${accountToDelete.name} deleted!`
     });
+}
+
+checkIfAccountInfoAlreadyExistsByName = async (name, res) => {
+    const doesAccountExist = await Account.findOne({name: name});
+    if(doesAccountExist){
+        const error = new Error('Account info already exists.')
+        error.statusCode = 422;
+
+        res.status(406).send(error.message);
+        throw error;
+    }
+}
+
+findAccountByNameAndUpdatePassword = async (name, newPassword) => {
+    const updatedAccount = await Account.findOneAndUpdate({name: name}, {password: newPassword}, {new: true});
+        if(!updatedAccount){
+            throw new Error('Error updating Account');
+        }
+        return updatedAccount;
+}
+
+findAccountByIdAndDelete_ThenReturnDeletedAccountName = async (id) => {
+    const accountToDelete = await Account.findByIdAndDelete(id);
+    if(!accountToDelete){
+        const error = new Error('Account id: ', id, ' not found!');
+        error.statusCode = 404;
+        throw error;
+    }
+    return accountToDelete
 }

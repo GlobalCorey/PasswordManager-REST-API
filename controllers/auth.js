@@ -4,38 +4,22 @@ const bcrypt = require('bcrypt');
 const BCRYPT_SALT = 12;
 const jwt = require('../jwt/jwt')
 
-//Need to add new endpoint to get the current user if the 
-// session is still valid
-
 exports.currentUser = async(req, res, next) => {
     const currentUser = req.userData;
-
-    const user = await User.findById(currentUser.userId);
-    if(!user){
-        const error = new Error('User does not exists.')
-        error.statusCode = 401;
-        throw error;
-    }
+    const user = await checkIfUserExistsById_ThenReturnUserObject(currentUser.userId);
 
     return res.status(200).json({
         userID: user._id.toString()
     })
 }
 
-exports.refreshToken = async (req, res) => {
+exports.checkForValidRefreshToken_ThenReturnNewRefreshToken = async (req, res) => {
     const refreshToken = req.body.refreshToken;
-    console.log('refreshToken REST API: ', refreshToken);
     if(!refreshToken){
         return res.status(403).send('Access is forbidden');
     }
     try{
-        const newTokens = await jwt.refreshTokens(refreshToken);
-        console.log('newTokens: ', newTokens);
-        return res.status(200).json({
-            userID: newTokens.userId,
-            accessToken: newTokens.accessToken,
-            refreshToken: newTokens.refreshToken
-        })
+        await getRefreshTokenThenReturnToClient(refreshToken);
     }catch(err){
         const message = (err && err.message) || err;
         res.status(403).send(message);
@@ -47,29 +31,15 @@ exports.signup = async (req, res, next) => {
         const email = req.body.email;
         const password = req.body.password;
 
-        const user = await User.findOne({email: email});
-        if(user){
-            const error = new Error('Email already exists.')
-            error.statusCode = 422;
-            throw error;
-        }
+        await checkIfUserExistsBeforeContinuingSignup(email);
 
         const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT);
-        const newUser = new User({
-            email: email,
-            password: hashedPassword,
-            refreshTokens:[]
-        })
-
-        const userSaveResult = await newUser.save();
-        if(!userSaveResult){
-            const error = new Error('Error occured saving User during Signup!');
-            error.statusCode = 422;
-            throw error;
-        }
+        const newUser = creatAndReturnNewUser(email, hashedPassword,);
+        const newUserSaveResult = await saveNewUserToDB_ReturnNewUserObject(newUser);
+      
         res.status(201).json({
             message: 'New User created',
-            userId: userSaveResult._id
+            userId: newUserSaveResult._id
         })
     } catch (error) {
         if(!error.statusCode){
@@ -81,26 +51,13 @@ exports.signup = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
     try {
-        
         const email = req.body.email;
         const password = req.body.password;
-        console.log('email: ', email, '\npassword: ', password);
 
-        const user = await User.findOne({email: email});
-        if(!user){
-            const error = new Error('Email does not exists.')
-            error.statusCode = 401;
-            throw error;
-        }
+        const user = await checkIfUserExistsByEmail_ThenReturnUserObject(email);
+        
+        await checkIfPasswordIsCorrectOnLogin_ThrowErrorIfNot(password, user.password);
 
-        const isPasswordCorrect = await bcrypt.compare(password, user.password);
-        if(!isPasswordCorrect){
-            const error = new Error('Incorrect Email or Password.')
-            error.statusCode = 401;
-            throw error;
-        }
-
-        //Add getRefreshToken functionality to the JWT file
         const accessToken = jwt.getAccessToken(user.email, user._id.toString());
         const refreshToken = await jwt.getRefreshToken(user.email, user._id.toString());
 
@@ -108,8 +65,9 @@ exports.login = async (req, res, next) => {
             userID: user._id.toString(),
             accessToken: accessToken,
             refreshToken: refreshToken
-        })
+        });
         return;
+        
         
     } catch (error) {
         if(!error.statusCode){
@@ -117,5 +75,71 @@ exports.login = async (req, res, next) => {
         }
         next(error);
         return error;
+    }
+}
+
+getRefreshTokenThenReturnToClient = async (refreshToken) => {
+    const newTokens = await jwt.refreshTokens(refreshToken);
+        return res.status(200).json({
+            userID: newTokens.userId,
+            accessToken: newTokens.accessToken,
+            refreshToken: newTokens.refreshToken
+        })
+}
+
+checkIfPasswordIsCorrectOnLogin_ThrowErrorIfNot = async (providedPassword, knownPassword) =>{
+    const isPasswordCorrect = await bcrypt.compare(providedPassword, knownPassword);
+    if(!isPasswordCorrect){
+        const error = new Error('Incorrect Email or Password.')
+        error.statusCode = 401;
+        throw error;
+    }
+}
+
+creatAndReturnNewUser = (email, password) => {
+    const newUser = new User({
+        email: email,
+        password: password,
+        refreshTokens:[]
+    })
+    return newUser;
+}
+
+saveNewUserToDB_ReturnNewUserObject = async (newUser) => {
+    const userSaveResult = await newUser.save();
+        if(!userSaveResult){
+            const error = new Error('Error occured saving User during Signup!');
+            error.statusCode = 422;
+            throw error;
+        }
+    return userSaveResult;
+}
+
+checkIfUserExistsById_ThenReturnUserObject = async (id) => {
+    const user = await User.findById(id);
+    if(!user){
+        const error = new Error('User does not exists.')
+        error.statusCode = 401;
+        throw error;
+    }
+    return user;
+}
+
+checkIfUserExistsByEmail_ThenReturnUserObject = async (email) => {
+    const user = await User.findOne({email: email});
+    if(!user){
+        const error = new Error('Email does not exists.')
+        error.statusCode = 401;
+        throw error;
+    }
+    return user;
+}
+
+checkIfUserExistsBeforeContinuingSignup = async (email) => {
+    const user = await User.findOne({email: email});
+    if(user){
+        const error = new Error('Email already exists.')
+        error.statusCode = 422;
+        throw error;
     }
 }
