@@ -1,6 +1,6 @@
 const Account = require('../models/account');
 
-exports.getAccounts = async (req, res, next) => {
+exports.getAccounts = async (req, res) => {
     const currentUserID = req.userData.userId;
     const accounts = await Account.find({userID: currentUserID});
     if(!accounts){
@@ -14,7 +14,7 @@ exports.getAccounts = async (req, res, next) => {
     });
 }
 
-exports.addAccount = async (req, res, next) => {
+exports.addAccount = async (req, res) => {
     const userID = req.userData.userId
     const name = req.body.account.name;
     const password = req.body.account.password;
@@ -26,7 +26,7 @@ exports.addAccount = async (req, res, next) => {
     })
 
     try {
-        await checkIfAccountInfoAlreadyExistsByName(name, res);
+        await checkIfAccountInfoAlreadyExistsByName(name, userID, res);
        
         const accountSaveResult = await newAccount.save();
         if(!accountSaveResult){
@@ -45,11 +45,14 @@ exports.addAccount = async (req, res, next) => {
     }
 }
 
-exports.changeAccount = async (req, res, next) => {
+
+exports.changeAccount = async (req, res) => {
     const name = req.body.account.name;
     const newPassword = req.body.account.password;
 
     try {
+        //TODO
+        //Should change this to use the account._id instead of the name
         const updatedAccount = await findAccountByNameAndUpdatePassword(name, newPassword);
 
         res.status(201).json({
@@ -64,7 +67,7 @@ exports.changeAccount = async (req, res, next) => {
     }
 }
 
-exports.deleteAccount = async (req, res, next) => {
+exports.deleteAccount = async (req, res) => {
     const accountID = req.query.id
     const accountToDelete = await findAccountByIdAndDelete_ThenReturnDeletedAccountName(accountID);
 
@@ -73,12 +76,11 @@ exports.deleteAccount = async (req, res, next) => {
     });
 }
 
-checkIfAccountInfoAlreadyExistsByName = async (name, res) => {
-    const doesAccountExist = await Account.findOne({name: name});
+checkIfAccountInfoAlreadyExistsByName = async (name, userID, res) => {
+    const doesAccountExist = await Account.findOne({name: name, userID: userID});
     if(doesAccountExist){
         const error = new Error('Account info already exists.')
         error.statusCode = 422;
-
         res.status(406).send(error.message);
         throw error;
     }
