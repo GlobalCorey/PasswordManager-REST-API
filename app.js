@@ -4,7 +4,7 @@ const app = express();
 const cors = require('cors');
 const accountRoutes = require('./routes/accounts');
 const authRoutes = require('./routes/auth');
-const MONGODB_URI = `mongodb+srv://GLCorey:${process.env.MONGO_DB_PW}@cluster0-hdloo.mongodb.net/services?retryWrites=true&w=majority`;
+const MONGODB_URI = `mongodb+srv://${process.env.MONGO_DB_USER}:${process.env.MONGO_DB_PW}@${process.env.MONGO_DB_CLUSTER}.mongodb.net/services?retryWrites=true&w=majority`;
 const mongoose = require('mongoose');
 
 app.use(express.json());
