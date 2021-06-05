@@ -1,4 +1,4 @@
-const express = require('express');
+import express = require('express');
 const router = express.Router();
 const accountController = require('../controllers/account');
 const { jwtMiddleware } = require('../middleware/middleware');
