@@ -1,0 +1,9 @@
+{
+    
+    "verbose": true,
+    "ignore": ["node_modules", "package-lock.json"],
+    "execMap": {
+        "ts": "node --require ts-node/register"
+    },
+    "ext": "js,json,ts"
+}

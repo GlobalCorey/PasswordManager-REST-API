@@ -10,6 +10,6 @@ router.post('/accounts', jwtMiddleware, accountController.addAccount);
 router.delete('/accounts', jwtMiddleware, accountController.deleteAccount);
 
 //PUT change password. Hookup in future.
-router.put('/accounts', accountController.changeAccount);
+router.put('/accounts', accountController.changeAccountPassword);
 
 module.exports = router;

@@ -1,11 +1,11 @@
 require('dotenv').config();
-const express = require('express');
+import express = require('express');
 const app = express();
 const cors = require('cors');
 const accountRoutes = require('./routes/accounts');
 const authRoutes = require('./routes/auth');
 const MONGODB_URI = `mongodb+srv://${process.env.MONGO_DB_USER}:${process.env.MONGO_DB_PW}@${process.env.MONGO_DB_CLUSTER}.mongodb.net/services?retryWrites=true&w=majority`;
-const mongoose = require('mongoose');
+import mongoose = require('mongoose');
 
 app.use(express.json());
 app.use(cors());
@@ -21,5 +21,5 @@ mongoose.connect(MONGODB_URI, {
     console.log('MongoDB Connected!!')
     app.listen(8080);
 })
-.catch(err => console.log('error connecting with mongoose: ', err));
+.catch((err: Error) => console.log('error connecting with mongoose: ', err));
 
