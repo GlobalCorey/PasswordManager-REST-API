@@ -7,7 +7,7 @@ const bcrypt = require('bcrypt');
 const BCRYPT_SALT = 12;
 const jwt = require('../jwt/jwt')
 
-exports.currentUser = async(req: IRequest, res: express.Response) => {
+exports.currentUser = async (req: IRequest, res: express.Response): Promise<express.Response> => {
     const currentUser: {email: string, userId: string} = req.userData;
     const user: IUser = await checkIfUserExistsById_ThenReturnUserObject(currentUser.userId);
 
@@ -16,23 +16,22 @@ exports.currentUser = async(req: IRequest, res: express.Response) => {
     })
 }
 
-exports.checkForValidRefreshToken_ThenReturnNewRefreshToken = async (req: IRequest, res: express.Response) => {
+exports.checkForValidRefreshToken_ThenReturnNewRefreshToken = async (req: IRequest, res: express.Response): Promise<express.Response> => {
     const refreshToken: string = req.body.refreshToken;
     if(!refreshToken){
         return res.status(403).send('Access is forbidden');
     }
     try{
-        await getRefreshTokenThenReturnToClient(refreshToken, res);
+        return await getRefreshTokenThenReturnToClient(refreshToken, res);
     }catch(err){
         const message: string = (err && err.message) || err;
-        res.status(403).send(message);
+        return res.status(403).send(message);
     }
 }
 
-exports.signup = async (req: IRequest, res: express.Response, next: express.NextFunction) => {
+exports.signup = async (req: IRequest, res: express.Response, next: express.NextFunction): Promise<express.Response | void> => {
     try {
-        const email: string = req.body.email;
-        const password: string = req.body.password;
+        const { email, password } = req.body
 
         await checkIfUserExistsBeforeContinuingSignup(email);
 
@@ -40,7 +39,7 @@ exports.signup = async (req: IRequest, res: express.Response, next: express.Next
         const newUser: IUser = creatAndReturnNewUser(email, hashedPassword,);
         const newUserSaveResult: IUser = await saveNewUserToDB_ReturnNewUserObject(newUser);
       
-        res.status(201).json({
+        return res.status(201).json({
             message: 'New User created',
             userId: newUserSaveResult._id
         })
@@ -48,15 +47,13 @@ exports.signup = async (req: IRequest, res: express.Response, next: express.Next
         if(!error.statusCode){
             error.statusCode = 500;
         }
-        next(error);
+        return next(error);
     }
 };
 
-exports.login = async (req: IRequest, res: express.Response, next: express.NextFunction) => {
+exports.login = async (req: IRequest, res: express.Response, next: express.NextFunction): Promise<express.Response | void> => {
     try {
-        const email: string = req.body.email;
-        const password: string = req.body.password;
-
+        const { email, password } = req.body
         const user: IUser = await checkIfUserExistsByEmail_ThenReturnUserObject(email);
         
         await checkIfPasswordIsCorrectOnLogin_ThrowErrorIfNot(password, user.password);
@@ -64,28 +61,22 @@ exports.login = async (req: IRequest, res: express.Response, next: express.NextF
         const accessToken: string = jwt.getAccessToken(user.email, user._id.toString());
         const refreshToken: string = await jwt.getRefreshToken(user.email, user._id.toString());
 
-        res.status(200).json({
+        return res.status(200).json({
             userID: user._id.toString(),
             accessToken: accessToken,
             refreshToken: refreshToken
         });
-        return;
     } catch (error) {
         if(!error.statusCode){
             error.statusCode = 500;
         }
-        next(error);
-        return error;
+        return next(error);
     }
 }
 
 async function getRefreshTokenThenReturnToClient(refreshToken: string,  res: express.Response): Promise<express.Response>{
     const newTokens: Token = await jwt.refreshTokens(refreshToken);
-        return res.status(200).json({
-            userID: newTokens.userId,
-            accessToken: newTokens.accessToken,
-            refreshToken: newTokens.refreshToken
-        })
+        return res.status(200).json({ ...newTokens })
 }
 
 async function checkIfPasswordIsCorrectOnLogin_ThrowErrorIfNot(providedPassword: string, knownPassword: string): Promise<void>{

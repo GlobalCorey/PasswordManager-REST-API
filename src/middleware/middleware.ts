@@ -1,11 +1,9 @@
 import express = require('express');
 import { IRequest, IUserData } from '../common/types';
 
-
-const jwt = require('jsonwebtoken');
 const myJwt = require('../jwt/jwt');
 
-module.exports.jwtMiddleware =  (req: IRequest, res: express.Response, next: express.NextFunction) => {
+module.exports.jwtMiddleware =  (req: IRequest, res: express.Response, next: express.NextFunction): void | express.Response => {
     const token: string = req.headers.authorization.replace("Bearer ", "");
     myJwt.verifyJWTToken(token)
     .then((data: IUserData) => {
@@ -14,7 +12,7 @@ module.exports.jwtMiddleware =  (req: IRequest, res: express.Response, next: exp
             userId: data.userId
         }
         req.userData = userData;
-        next();
+        return next();
     })
     .catch((err: Error) => {
         return res.status(401).json({

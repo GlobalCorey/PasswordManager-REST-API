@@ -1,9 +1,9 @@
-import { Token } from '../common/types'
+import { IUser, Token } from '../common/types'
 
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
-const verifyJWTToken = (token: string) => {
+const verifyJWTToken = (token: string): Promise<Token | Error> => {
     return new Promise((resolve, reject) => {
         jwt.verify(token, process.env.JWT_SECRET_TOKEN, (err: Error, decodedToken: Token) => {
             if(err){
@@ -18,7 +18,7 @@ const verifyJWTToken = (token: string) => {
     })
 };
 
-const getAccessToken = (email: string, userID: string) => {
+const getAccessToken = (email: string, userID: string): string => {
     return jwt.sign({
         email: email,
         userId: userID
@@ -27,8 +27,8 @@ const getAccessToken = (email: string, userID: string) => {
     {expiresIn: '1m'})
 };
 
-const getRefreshToken = async (email: string, userID: string) => {
-    const user = await checkIfUserExists_ThenReturnUserObject(userID)
+const getRefreshToken = async (email: string, userID: string): Promise<string> => {
+    const user = await checkIfUserExistsByID_ThenReturnUserObject(userID)
     
     let newRefreshTokens: string[] = user.refreshTokens.map((token: string) =>{ return token});
     if(newRefreshTokens.length >= 5){
@@ -43,10 +43,10 @@ const getRefreshToken = async (email: string, userID: string) => {
     return refreshToken;
 };
 
-const checkRefreshTokenForValidity_ReturnNewRefreshTokenIfValid = async (token: string) => {
+const checkRefreshTokenForValidity_ReturnNewRefreshTokenIfValid = async (token: string): Promise<Token> => {
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET_TOKEN);
     
-    const user = await User.findOne({_id: decodedToken.userId})
+    const user = await User.checkIfUserExistsByID_ThenReturnUserObject(decodedToken.userId)
     if(!user){
         throw new Error('User does not exist.');
     }
@@ -61,22 +61,18 @@ const checkRefreshTokenForValidity_ReturnNewRefreshTokenIfValid = async (token: 
         throw new Error('Refresh token is wrong');
     }
 
-    const payload = {
-        email: user.email,
-        userId: user._id.toString()
-    }
-
-    const newAccessToken = getAccessToken(payload.email, payload.userId);
-    const newRefreshToken = await getRefreshToken(payload.email, payload.userId);
+    const{ email, _id } = user;
+    const newAccessToken = getAccessToken(email, _id.toString());
+    const newRefreshToken = await getRefreshToken(email, _id.toString());
 
     return {
-        userId: user._id.toString(),
+        userId: _id.toString(),
         accessToken: newAccessToken,
         refreshToken: newRefreshToken
     }
 }
 
-async function findUserDocById_ThenPushNewRefreshTokensToUser(userID: string, newRefreshTokens: string[]){
+async function findUserDocById_ThenPushNewRefreshTokensToUser(userID: string, newRefreshTokens: string[]): Promise<void> {
     const updateRefreshTokens = await User.findByIdAndUpdate(userID, {refreshTokens: newRefreshTokens});
     if(!updateRefreshTokens){
         const error = new Error('Error updating refresh tokens.')
@@ -85,7 +81,7 @@ async function findUserDocById_ThenPushNewRefreshTokensToUser(userID: string, ne
     }
 }
 
-function createNewRefreshToken(email: string, userID: string){
+function createNewRefreshToken(email: string, userID: string): string {
     const refreshToken = jwt.sign({
         email: email,
         userId: userID
@@ -96,17 +92,15 @@ function createNewRefreshToken(email: string, userID: string){
     return refreshToken
 }
 
-function filterOutOldRefreshTokensFromUserObject_ThenReturnFilteredRefreshTokens(oldRefreshTokens: string[], userID: string){
+function filterOutOldRefreshTokensFromUserObject_ThenReturnFilteredRefreshTokens(oldRefreshTokens: string[], userID: string): string[] {
     const newRefreshTokens =  oldRefreshTokens.filter(token => {
-        console.log('before jwt.verify call')
         //Need to re-do this bit to handle expired tokens correctly
         jwt.verify(token, process.env.JWT_SECRET_TOKEN).userId !== userID
     });
-    console.log('newRefreshTokens filtered: ', newRefreshTokens)
     return newRefreshTokens;
 }
 
-async function checkIfUserExists_ThenReturnUserObject(id: string){
+async function checkIfUserExistsByID_ThenReturnUserObject(id: string): Promise<IUser> {
     const user = await User.findOne({_id: id})
     if(!user){
         const error = new Error('User does not exist')

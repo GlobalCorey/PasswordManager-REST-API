@@ -3,7 +3,7 @@ import { IAccount, IRequest } from '../common/types'
 
 const Account = require('../models/account');
 
-exports.getAccounts = async (req: IRequest, res: express.Response) => {
+exports.getAccounts = async (req: IRequest, res: express.Response): Promise<void> => {
     const currentUserID: string = req.userData.userId;
     const accounts: IAccount[] = await Account.find({userID: currentUserID});
     if(!accounts){
@@ -17,10 +17,11 @@ exports.getAccounts = async (req: IRequest, res: express.Response) => {
     });
 }
 
-exports.addAccount = async (req: IRequest, res: express.Response) => {
+//Look for run time error with adding the same account info across different login credentials.
+//First attempt to add account info does nothing. Logging out/in then repeating yields the correct behavior.
+exports.addAccount = async (req: IRequest, res: express.Response): Promise<IAccount | Error> => {
     const userID: string = req.userData.userId
-    const name: string = req.body.account.name;
-    const password: string = req.body.account.password;
+    const { name, password } = req.body.account;
     
     const newAccount: IAccount = new Account({
         userID: userID,
@@ -45,18 +46,19 @@ exports.addAccount = async (req: IRequest, res: express.Response) => {
 
     }catch(err){
         console.log('Error adding account: ', err);
+        return err;
     }
 }
 
 
-exports.changeAccountPassword = async (req: IRequest, res: express.Response) => {
-    const name: string = req.body.account.name;
-    const newPassword: string = req.body.account.password;
+exports.changeAccountPassword = async (req: IRequest, res: express.Response): Promise<IAccount | Error> => {
+    const userID: string = req.userData.userId
+    const { name, password: newPassword } = req.body.account;
 
     try {
         //TODO
         //Should change this to use the account._id instead of the name
-        const updatedAccount: IAccount = await findAccountByNameAndUpdatePassword(name, newPassword);
+        const updatedAccount: IAccount = await findAccountByIDAndUpdatePassword(userID, newPassword);
 
         res.status(201).json({
             account: updatedAccount,
@@ -67,10 +69,11 @@ exports.changeAccountPassword = async (req: IRequest, res: express.Response) => 
 
     }catch(err){
         console.log('Error updating account: ', err);
+        return err;
     }
 }
 
-exports.deleteAccount = async (req: IRequest, res: express.Response) => {
+exports.deleteAccount = async (req: IRequest, res: express.Response): Promise<void> => {
     const accountID: string = req.query.id
     const accountToDelete: IAccount = await findAccountByIdAndDelete_ThenReturnDeletedAccountName(accountID);
 
@@ -89,8 +92,8 @@ async function checkIfAccountInfoAlreadyExistsByName(name: string, userID: strin
     }
 }
 
-async function findAccountByNameAndUpdatePassword(name: string, newPassword: string): Promise<IAccount>{
-    const updatedAccount: IAccount = await Account.findOneAndUpdate({name: name}, {password: newPassword}, {new: true});
+async function findAccountByIDAndUpdatePassword(ID: string, newPassword: string): Promise<IAccount>{
+    const updatedAccount: IAccount = await Account.findOneAndUpdate({_id: ID}, {password: newPassword}, {new: true});
         if(!updatedAccount){
             throw new Error('Error updating Account');
         }
