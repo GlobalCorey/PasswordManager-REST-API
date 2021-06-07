@@ -13,7 +13,7 @@ const verifyJWTToken = (token: string): Promise<Token | Error> => {
             if(!decodedToken || !decodedToken.userId){
                 return reject('Token is invalid. Decode error.')
             }
-            resolve(decodedToken);
+            return resolve(decodedToken);
         })
     })
 };
@@ -94,7 +94,6 @@ function createNewRefreshToken(email: string, userID: string): string {
 
 function filterOutOldRefreshTokensFromUserObject_ThenReturnFilteredRefreshTokens(oldRefreshTokens: string[], userID: string): string[] {
     const newRefreshTokens =  oldRefreshTokens.filter(token => {
-        //Need to re-do this bit to handle expired tokens correctly
         jwt.verify(token, process.env.JWT_SECRET_TOKEN).userId !== userID
     });
     return newRefreshTokens;

@@ -6,9 +6,9 @@ export interface Token{
     refreshToken: string;
 }
 export interface IUser extends Document {
-        email: string,
-        password: string,
-        refreshTokens: string[]
+    email: string,
+    password: string,
+    refreshTokens: string[]
 }
 export interface IUserData {
     email: string,

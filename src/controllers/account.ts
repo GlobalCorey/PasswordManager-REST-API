@@ -41,9 +41,7 @@ exports.addAccount = async (req: IRequest, res: express.Response): Promise<IAcco
             account: newAccount,
             message: 'Success in adding account!'
         })
-
         return accountSaveResult;
-
     }catch(err){
         console.log('Error adding account: ', err);
         return err;
@@ -56,17 +54,12 @@ exports.changeAccountPassword = async (req: IRequest, res: express.Response): Pr
     const { name, password: newPassword } = req.body.account;
 
     try {
-        //TODO
-        //Should change this to use the account._id instead of the name
         const updatedAccount: IAccount = await findAccountByIDAndUpdatePassword(userID, newPassword);
-
         res.status(201).json({
             account: updatedAccount,
             message: 'Success in updating account!'
         })
-
         return updatedAccount;
-
     }catch(err){
         console.log('Error updating account: ', err);
         return err;
