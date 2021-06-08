@@ -5,15 +5,14 @@ export interface Token{
     accessToken: string; 
     refreshToken: string;
 }
+export interface IUserData {
+    userId: string,
+    email: string
+}
 export interface IUser extends Document {
     email: string,
     password: string,
     refreshTokens: string[]
-}
-export interface IUserData {
-    email: string,
-    userId: string
-    
 }
 export interface IAccount extends Document {
     userID: string,
@@ -21,10 +20,7 @@ export interface IAccount extends Document {
     password: string
 }
 export interface IRequest extends express.Request{
-    userData: {
-        email: string,
-        userId: string
-    },
+    userData: IUserData,
     headers: {
         authorization: string
     },

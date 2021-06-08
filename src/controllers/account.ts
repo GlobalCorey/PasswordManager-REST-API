@@ -19,7 +19,7 @@ exports.getAccounts = async (req: IRequest, res: express.Response): Promise<void
 
 //Look for run time error with adding the same account info across different login credentials.
 //First attempt to add account info does nothing. Logging out/in then repeating yields the correct behavior.
-exports.addAccount = async (req: IRequest, res: express.Response): Promise<IAccount | Error> => {
+exports.addAccount = async (req: IRequest, res: express.Response): Promise<express.Response | Error> => {
     const userID: string = req.userData.userId
     const { name, password } = req.body.account;
     
@@ -37,40 +37,38 @@ exports.addAccount = async (req: IRequest, res: express.Response): Promise<IAcco
             throw new Error('Error saving new Account');
         }
 
-        res.status(201).json({
-            account: newAccount,
+        return res.status(201).json({
+            account: accountSaveResult,
             message: 'Success in adding account!'
-        })
-        return accountSaveResult;
+        });
+        
     }catch(err){
         console.log('Error adding account: ', err);
         return err;
     }
 }
 
-
-exports.changeAccountPassword = async (req: IRequest, res: express.Response): Promise<IAccount | Error> => {
+exports.changeAccountPassword = async (req: IRequest, res: express.Response): Promise<express.Response | Error> => {
     const userID: string = req.userData.userId
-    const { name, password: newPassword } = req.body.account;
+    const { password: newPassword } = req.body.account;
 
     try {
         const updatedAccount: IAccount = await findAccountByIDAndUpdatePassword(userID, newPassword);
-        res.status(201).json({
+        return res.status(201).json({
             account: updatedAccount,
             message: 'Success in updating account!'
         })
-        return updatedAccount;
     }catch(err){
         console.log('Error updating account: ', err);
         return err;
     }
 }
 
-exports.deleteAccount = async (req: IRequest, res: express.Response): Promise<void> => {
+exports.deleteAccount = async (req: IRequest, res: express.Response): Promise<express.Response> => {
     const accountID: string = req.query.id
     const accountToDelete: IAccount = await findAccountByIdAndDelete_ThenReturnDeletedAccountName(accountID);
 
-    res.status(200).json({
+    return  res.status(200).json({
         message: `Account:  ${accountToDelete.name} deleted!`
     });
 }

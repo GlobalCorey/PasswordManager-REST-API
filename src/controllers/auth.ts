@@ -87,6 +87,7 @@ async function checkIfPasswordIsCorrectOnLogin_ThrowErrorIfNot(providedPassword:
         throw error;
     }
 }
+
 function creatAndReturnNewUser(email: string, password: string): IUser {
     const newUser: IUser = new User({
         email: email,
