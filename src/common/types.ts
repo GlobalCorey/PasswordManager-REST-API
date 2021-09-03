@@ -1,5 +1,6 @@
 import express = require('express');
 import { Document } from 'mongoose';
+
 export interface Token{
     userId: string;
     accessToken: string; 
